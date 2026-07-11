@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, session, redirect, url_for
+import os
 
 app = Flask(__name__)
-app.secret_key = "taxi-secret-key"  
+app.secret_key = os.environ.get("SECRET_KEY", "taxi-secret-key")  
 
 @app.route("/", methods=["GET"])
 def index():
