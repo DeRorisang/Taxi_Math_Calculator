@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SA Taxi Math Calculator</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;800&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css') }}" />
+</head>
+
+<body>
+
+  <div class="header">
+    <p class="header-eyebrow">South Africa</p>
+    <h1>Taxi <span>Math</span></h1>
+  </div>
+
+  <div class="card">
+
+    {# ── STEP 1: Set the taxi fare ── #}
+    {% if state == "set_fare" %}
+    <form action="/set_fare" method="POST">
+      <div class="card-section">
+        <p class="section-label">Fare</p>
+        <div class="field">
+          <label for="taxi_fare">Taxi Fare per Passenger</label>
+          <div class="input-wrap">
+            <span class="input-prefix">R</span>
+            <input type="number" id="taxi_fare" name="taxi_fare" placeholder="0.00" min="0" step="0.50" required />
+          </div>
+        </div>
+      </div>
+      <div class="card-section">
+        <button type="submit" class="btn btn-primary">Set Fare</button>
+        {% if error %}
+        <p class="error-msg">{{ error }}</p>
+        {% endif %}
+      </div>
+    </form>
+    {% endif %}
+
+    {# ── STEP 2: Enter payment for a group ── #}
+    {% if state == "payment" %}
+
+    <div class="fare-strip">
+      <span class="fare-strip-label">Taxi Fare</span>
+      <span class="fare-strip-value">R {{ "%.2f"|format(taxi_fare) }}</span>
+    </div>
+
+    {% if log %}
+    {% for entry in log %}
+    <div class="log-entry">
+      <div class="log-entry-header">
+        <span class="log-entry-title">Group {{ entry.counter }}</span>
+        <span class="log-entry-driver">R {{ "%.2f"|format(entry.drivers_money) }}</span>
+      </div>
+      <div class="log-entry-details">
+        <span class="log-detail"><strong>{{ entry.pax }}</strong> pax</span>
+        <span class="log-detail">Paid <strong>R {{ "%.2f"|format(entry.paid) }}</strong></span>
+        <span class="log-detail">
+          Change
+          {% if entry.change < 0 %} <span class="neg">- R {{ "%.2f"|format(entry.change|abs) }}</span>
+        {% else %}
+        <span class="pos">R {{ "%.2f"|format(entry.change) }}</span>
+        {% endif %}
+        </span>
+      </div>
+    </div>
+    {% endfor %}
+    <div class="totals-row">
+      <div class="total-cell">
+        <div class="total-cell-label">Total Passengers</div>
+        <div class="total-cell-value white">{{ total_passengers }}</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-cell-label">Driver's Total</div>
+        <div class="total-cell-value">R {{ "%.2f"|format(total_drivers_money) }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <form action="/calculate" method="POST">
+      <div class="card-section">
+        <p class="section-label">Passenger / Group {{ counter }}</p>
+        <div class="field">
+          <label for="amount_paid">Amount Paid</label>
+          <div class="input-wrap">
+            <span class="input-prefix">R</span>
+            <input type="number" id="amount_paid" name="amount_paid" placeholder="0.00" min="0" step="0.50" required />
+          </div>
+        </div>
+        <div class="field">
+          <label for="number_of_passengers">Number of Passengers</label>
+          <input type="number" id="number_of_passengers" name="number_of_passengers" placeholder="1" min="1" step="1"
+            required />
+        </div>
+      </div>
+      <div class="card-section">
+        <button type="submit" class="btn btn-primary">Calculate</button>
+        {% if error %}
+        <p class="error-msg">{{ error }}</p>
+        {% endif %}
+      </div>
+    </form>
+
+    <form action="/reset" method="POST">
+      <div class="card-section">
+        <button type="submit" class="btn-reset">Reset Session</button>
+      </div>
+    </form>
+
+    {% endif %}
+
+    {# ── STEP 3: Ask add another? ── #}
+    {% if state == "prompt" %}
+
+    <div class="fare-strip">
+      <span class="fare-strip-label">Taxi Fare</span>
+      <span class="fare-strip-value">R {{ "%.2f"|format(taxi_fare) }}</span>
+    </div>
+
+    {% for entry in log %}
+    <div class="log-entry">
+      <div class="log-entry-header">
+        <span class="log-entry-title">Group {{ entry.counter }}</span>
+        <span class="log-entry-driver">R {{ "%.2f"|format(entry.drivers_money) }}</span>
+      </div>
+      <div class="log-entry-details">
+        <span class="log-detail"><strong>{{ entry.pax }}</strong> pax</span>
+        <span class="log-detail">Paid <strong>R {{ "%.2f"|format(entry.paid) }}</strong></span>
+        <span class="log-detail">
+          Change
+          {% if entry.change < 0 %} <span class="neg">- R {{ "%.2f"|format(entry.change|abs) }}</span>
+        {% else %}
+        <span class="pos">R {{ "%.2f"|format(entry.change) }}</span>
+        {% endif %}
+        </span>
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="totals-row">
+      <div class="total-cell">
+        <div class="total-cell-label">Total Passengers</div>
+        <div class="total-cell-value white">{{ total_passengers }}</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-cell-label">Driver's Total</div>
+        <div class="total-cell-value">R {{ "%.2f"|format(total_drivers_money) }}</div>
+      </div>
+    </div>
+
+    <div class="prompt-box">
+      <span class="prompt-question">Add another passenger / group?</span>
+      <div class="prompt-btns">
+        <form action="/add_group" method="POST" style="display:inline;">
+          <button type="submit" class="btn-yes">Yes</button>
+        </form>
+        <form action="/finish" method="POST" style="display:inline;">
+          <button type="submit" class="btn-no">No</button>
+        </form>
+      </div>
+    </div>
+
+    {% endif %}
+
+    {# ── STEP 4: Final summary ── #}
+    {% if state == "done" %}
+
+    <div class="fare-strip">
+      <span class="fare-strip-label">Taxi Fare</span>
+      <span class="fare-strip-value">R {{ "%.2f"|format(taxi_fare) }}</span>
+    </div>
+
+    {% for entry in log %}
+    <div class="log-entry">
+      <div class="log-entry-header">
+        <span class="log-entry-title">Group {{ entry.counter }}</span>
+        <span class="log-entry-driver">R {{ "%.2f"|format(entry.drivers_money) }}</span>
+      </div>
+      <div class="log-entry-details">
+        <span class="log-detail"><strong>{{ entry.pax }}</strong> pax</span>
+        <span class="log-detail">Paid <strong>R {{ "%.2f"|format(entry.paid) }}</strong></span>
+        <span class="log-detail">
+          Change
+          {% if entry.change < 0 %} <span class="neg">- R {{ "%.2f"|format(entry.change|abs) }}</span>
+        {% else %}
+        <span class="pos">R {{ "%.2f"|format(entry.change) }}</span>
+        {% endif %}
+        </span>
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="totals-row">
+      <div class="total-cell">
+        <div class="total-cell-label">Total Passengers</div>
+        <div class="total-cell-value white">{{ total_passengers }}</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-cell-label">Driver's Total</div>
+        <div class="total-cell-value">R {{ "%.2f"|format(total_drivers_money) }}</div>
+      </div>
+    </div>
+
+    <div class="done-banner">
+      Thank you for using the Taxi Fare Calculator!
+    </div>
+
+    <form action="/reset" method="POST">
+      <div class="card-section">
+        <button type="submit" class="btn-reset">Start New Session</button>
+      </div>
+    </form>
+
+    {% endif %}
+
+  </div>
+
+</body>
+
+</html>
